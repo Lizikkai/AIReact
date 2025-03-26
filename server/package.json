@@ -1,0 +1,26 @@
+{
+  "name": "info-server",
+  "version": "1.0.0",
+  "description": "This server sevice userinfomation create and edit and so on",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "lizikai",
+  "license": "ISC",
+  "dependencies": {
+    "@koa/cors": "^5.0.0",
+    "@koa/router": "^13.1.0",
+    "dotenv": "^16.4.7",
+    "jsonwebtoken": "^9.0.2",
+    "koa": "^2.16.0",
+    "koa-bodyparser": "^4.4.1",
+    "koa-static": "^5.0.0",
+    "mysql2": "^3.14.0",
+    "openai": "^4.89.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
