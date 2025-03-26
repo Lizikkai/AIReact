@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
@@ -53,7 +52,5 @@ export default tseslint.config({
   },
 })
 ```
-=======
 # AIReact
 This repository is mainly used to build a project for us and connect it with popular AI models, and it language is ReactJS
->>>>>>> 276cc71a81996b69cecf73f78a404c59aaa77ec2
