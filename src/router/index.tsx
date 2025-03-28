@@ -1,7 +1,8 @@
 import { type RouteObject, useRoutes } from "react-router-dom";
-import Layout from "../components/Layout";
-import Home from "../pages/Home";
-import LoginApp from "../pages/Login";
+import Layout from "@/components/Layout";
+import Home from "@/pages/Home";
+import LoginApp from "@/pages/Login";
+import PageNotFound from '@/pages/NotFound'
 
 const routes: RouteObject[] = [
   {
@@ -16,7 +17,11 @@ const routes: RouteObject[] = [
   },
   {
     path:'/login',
-    element: <LoginApp></LoginApp>
+    element: <LoginApp />
+  },
+  {
+    path: '*',
+    element: <PageNotFound />
   }
 ]
 
