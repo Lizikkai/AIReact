@@ -1,7 +1,12 @@
 import React, { useRef, useEffect, useState } from "react";
 import styles from "./index.module.css"; // 原CSS样式文件（需微调选择器）
 import clsx from "clsx";
-import { Form } from "antd";
+import { Form, Input, Button, Checkbox, Flex, message } from "antd";
+import { LockOutlined, UserOutlined, PhoneOutlined } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
+import { Login, Register } from "@/apis";
+import { Rule } from "antd/es/form";
+import { sleep } from "@/utils/app";
 
 interface Star {
   x: number;
@@ -12,13 +17,31 @@ interface Star {
   hue: number;
 }
 
+type LoginField = {
+  name: string;
+  password: string;
+  remember: boolean;
+};
+
+type RegisterField = {
+  name: string;
+  password: string;
+  confirmPassword: string;
+  mobile: string;
+};
+
 const LoginPage: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [loginLoading, setLoginLoading] = useState<boolean>(false);
+  const [registerLoading, setRegisterLoading] = useState<boolean>(false);
+  const [loginInfo, setLoginInfo] = useState(getInitialLoginValues());
+  const [registerInfo, setRegisterInfo] = useState(getInitialRegisterValues());
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const stars = useRef<Star[]>([]);
   const animationFrameId = useRef<number>(Date.now());
+  const navigate = useNavigate();
+  const [loginForm] = Form.useForm();
+  const [registerForm] = Form.useForm();
 
   // 初始化参数配置
   const config = {
@@ -113,33 +136,188 @@ const LoginPage: React.FC = () => {
     };
   }, []);
 
-  const layout = {
-    labelCol: { span: 4 },
-    wrapperCol: { span: 20 }
-  };
+  function getInitialLoginValues(): LoginField {
+    return {
+      name: "",
+      password: "",
+      remember: false // 初始值为false，即不记住用户登录状态
+    };
+  }
+
+  function getInitialRegisterValues(): RegisterField {
+    return {
+      name: "",
+      password: "",
+      confirmPassword: "",
+      mobile: ""
+    };
+  }
 
   function LoginForm() {
     return (
-      <Form {...layout} layout="horizontal" onFinish={handleLoginFinish} autoComplete="off">
-        <Form.Item name="name" label="用户名"></Form.Item>
-        <Form.Item name="password" label="密码"></Form.Item>
+      <Form
+        form={loginForm}
+        wrapperCol={{ flex: 1 }}
+        layout="horizontal"
+        onFinish={handleLoginFinish}
+        autoComplete="off"
+      >
+        <Form.Item
+          rules={[{ required: true, message: "请填写您的用户名" }]}
+          name="name"
+        >
+          <Input
+            prefix={<UserOutlined />}
+            value={loginInfo.name}
+            allowClear={true}
+            placeholder="请输入用户名"
+          ></Input>
+        </Form.Item>
+        <Form.Item
+          name="password"
+          rules={[{ required: true, message: "请填写您的密码" }]}
+        >
+          <Input.Password
+            placeholder="请输入密码"
+            value={loginInfo.password}
+            prefix={<LockOutlined />}
+            allowClear={true}
+          />
+        </Form.Item>
+        <Form.Item>
+          <Flex justify="space-between" align="center">
+            <Form.Item name="remember" valuePropName="checked" noStyle>
+              <Checkbox>记住我</Checkbox>
+            </Form.Item>
+            <a href="">忘记密码</a>
+          </Flex>
+        </Form.Item>
+        <Form.Item>
+          <Button
+            size="large"
+            loading={loginLoading}
+            htmlType="submit"
+            type="primary"
+          >
+            登录
+          </Button>
+        </Form.Item>
       </Form>
     );
   }
 
   function RegisterForm() {
     return (
-      <Form {...layout} layout="horizontal" onFinish={handleRegisterFinish}>
-        <Form.Item></Form.Item>
+      <Form
+        wrapperCol={{ flex: 1 }}
+        layout="horizontal"
+        onFinish={handleRegisterFinish}
+        form={registerForm}
+      >
+        <Form.Item
+          name="name"
+          rules={[{ required: true, message: "请填写您的用户名" }]}
+        >
+          <Input
+            prefix={<UserOutlined />}
+            value={registerInfo.name}
+            allowClear={true}
+            placeholder="请输入用户名"
+          ></Input>
+        </Form.Item>
+        <Form.Item
+          name="mobile"
+          rules={[ { required: true, message: "请填写您的手机号码" }, { pattern: /^1[3-9]\d{9}$/, message: '请输入正确格式的手机号码' } ]}
+        >
+          <Input
+            placeholder="请输入手机号码"
+            prefix={<PhoneOutlined />}
+            value={registerInfo.mobile}
+            allowClear={true}
+          ></Input>
+        </Form.Item>
+        <Form.Item
+          name="password"
+          rules={[{ required: true, message: "请填写您的密码" }]}
+        >
+          <Input.Password
+            prefix={<LockOutlined />}
+            value={registerInfo.password}
+            allowClear={true}
+            placeholder="请输入密码"
+          ></Input.Password>
+        </Form.Item>
+        <Form.Item
+          name="confirmPassword"
+          rules={[ { required: true, validator: validateConfirmPassword }]}
+        >
+          <Input.Password
+            prefix={<LockOutlined />}
+            value={registerInfo.confirmPassword}
+            allowClear={true}
+            placeholder="请再次确认密码"
+          ></Input.Password>
+        </Form.Item>
+        <Form.Item>
+          <Flex justify="space-between" align="center">
+            <Button size="large" htmlType="submit" type="primary" loading={registerLoading}>
+              注册
+            </Button>
+            <div className="flex gap-2 items-center">
+              <span>已有账号?</span>
+              <span
+                className="primary-link"
+                onClick={() => setActiveTab("login")}
+              >
+                返回登录
+              </span>
+            </div>
+          </Flex>
+        </Form.Item>
       </Form>
-    )
+    );
   }
 
-  function handleLoginFinish(values: any) {
-    console.log(values);
+  const validateConfirmPassword = (rule: Rule, value: string) => {
+    if(!value) {
+      return Promise.reject(new Error("请再次输入密码"));
+    }else {
+      if(value !== registerForm.getFieldsValue(['password']).password) {
+        return Promise.reject(new Error("两次输入的密码不一致"));
+      }
+    }
+    return Promise.resolve();
+  }
+
+  function handleLoginFinish(values: LoginField) {
+    setLoginLoading(true);
+    const body = {
+      name: values.name,
+      password: values.password
+    } as LoginField;
+    Login(body).then(() => {
+      setLoginLoading(false);
+      navigate("/");
+    }).catch(() => {
+      setLoginLoading(false);
+    })
   }
   function handleRegisterFinish(values: any) {
     console.log(values);
+    setRegisterLoading(true);
+    const body = {
+      name: values.name,
+      password: values.password,
+      mobile: values.mobile
+    } as RegisterField;
+    Register(body).then(async () => {
+      setRegisterLoading(false);
+      navigate("/");
+      await sleep(1000);
+      setActiveTab("login");
+    }).catch(() => {
+      setRegisterLoading(false);
+    })
   }
 
   function Header() {
@@ -149,10 +327,20 @@ const LoginPage: React.FC = () => {
           <h2 className={styles.welcomeText}>欢迎使用</h2>
         </div>
         <div className={styles.tabs}>
-          <div className={styles.tab} onClick={() => setActiveTab("login")}>
+          <div
+            className={clsx(styles.tab, {
+              [styles.active]: activeTab === "login"
+            })}
+            onClick={() => setActiveTab("login")}
+          >
             登录
           </div>
-          <div className={styles.tab} onClick={() => setActiveTab("register")}>
+          <div
+            className={clsx(styles.tab, {
+              [styles.active]: activeTab === "register"
+            })}
+            onClick={() => setActiveTab("register")}
+          >
             注册
           </div>
         </div>
@@ -169,7 +357,12 @@ const LoginPage: React.FC = () => {
   return (
     <div className={clsx(styles.loginContainer, "relative")}>
       <canvas ref={canvasRef} className={styles.loginCanvas} />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-2">
+      <div
+        className={clsx(
+          styles.loginWrapper,
+          "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+        )}
+      >
         <Header></Header>
       </div>
     </div>

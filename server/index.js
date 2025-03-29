@@ -4,6 +4,7 @@ import Koa from "koa";
 import mysql from "mysql2/promise";
 import serve from "koa-static";
 import cors from "@koa/cors";
+import jwt from "jsonwebtoken";
 import "dotenv/config";
 const app = new Koa();
 const router = new Router({ prefix: "/api/v1" });
@@ -61,9 +62,9 @@ app.use(
     /** 指定允许的 HTTP 请求方法 */
     allowMethods: ["GET", "POST", "OPTIONS", "DELETE", "PUT"],
     /** 允许客户端在请求中携带的 HTTP 头 */
-    allowHeaders: ["Content-Type", "Authorization"],
+    allowHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
     /** 允许浏览器访问的响应头 */
-    exposeHeaders: ["Authorization"]
+    exposeHeaders: ["Authorization", "Content-Type", "Content-Length"]
   })
 );
 /**
@@ -142,27 +143,18 @@ const verifyToken = async (ctx, next) => {
 };
 
 /** 登录接口 */
-router.post("/api/v1/login", async (ctx) => {
+router.post("/login", async (ctx) => {
   try {
     const { name, password } = ctx.request.body;
-    if (!name || !password) {
-      ctx.status = 400;
-      ctx.body = {
-        code: 1,
-        message: "用户名或密码不能为空",
-        content: null
-      };
-      return;
-    }
     const [rows] = await pool.query(
-      "SELECT * FROM user_info.info WHERE name = ? AND password = ?",
+      "SELECT * FROM user_info.info_react WHERE name = ? AND password = ?",
       [name, password]
     );
     if (rows.length > 0) {
       const token = jwt.sign(
         {
           userId: rows[0].id,
-          username: rows[0].name,
+          name: rows[0].name,
           password: rows[0].password,
           mobile: rows[0].mobile
         },
@@ -170,12 +162,13 @@ router.post("/api/v1/login", async (ctx) => {
         { expiresIn: "12h" }
       );
       ctx.set("Authorization", `Bearer ${token}`);
+      ctx.status = 200;
       ctx.body = {
         code: 0,
         message: "登录成功",
         content: {
           userId: rows[0].id,
-          username: rows[0].name,
+          name: rows[0].name,
           password: rows[0].password,
           mobile: rows[0].mobile
         }
@@ -198,8 +191,66 @@ router.post("/api/v1/login", async (ctx) => {
   }
 });
 
+/** 注册接口 */
+router.post("/register", async (ctx) => {
+  try {
+    const { name, password, mobile } = ctx.request.body;
+    // 校验手机号码是否已经存在/被注册
+    const [rows] = await pool.query(
+      "SELECT * FROM user_info.info_react WHERE mobile = ?",
+      [mobile]
+    )
+    if (rows.length > 0) {
+      ctx.status = 400;
+      ctx.body = {
+        code: 1,
+        message: "手机号码已被注册",
+        content: null
+      }
+      return
+    }
+    // 注册
+    const [result] = await pool.query(
+      "INSERT INTO user_info.info_react (name, password, mobile) VALUES (?, ?, ?)",
+      [name, password, mobile]
+    )
+    if (result.affectedRows === 1) {
+      const token = jwt.sign({
+        userId: result.insertId,
+        name,
+        password,
+        mobile
+      },process.env.JWT_SECRET, { expiresIn: "12h" })
+      ctx.set("Authorization", `Bearer ${token}`);
+      ctx.status = 200;
+      ctx.body = {
+        code: 0,
+        message: "注册成功",
+        content: {
+          userId: result.insertId,
+          name,
+          password,
+          mobile
+        }
+      }
+    }
+  } catch (error) {
+    ctx.status = 500;
+    ctx.body = {
+      code: 1,
+      message: "服务器错误",
+      content: null
+    }
+  }
+})
+
+
+// 注册路由中间件（在app.listen之前）
+app.use(router.routes());
+app.use(router.allowedMethods());
 
 // 启动服务器
 app.listen(9999, () => {
   console.log('服务器运行在 9999 端口')
 })
+

@@ -1,0 +1,48 @@
+.mainContainer {
+  min-width: 1024px;
+  min-height: 100vh;
+  background-image: linear-gradient(
+    180deg,
+    rgba(172, 221, 255, 0.7),
+    hsla(0, 0%, 100%, 0.7) 50%
+  );
+  background-size: 100% 1400px;
+  background-repeat: no-repeat;
+  position: relative;
+}
+.mainHeader {
+  position: absolute;
+  z-index: 10;
+}
+.mainHeaderWrap {
+  height: 48px;
+  max-width: 1440px;
+  margin: 0 auto;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-justify-content: space-between;
+  justify-content: space-between;
+  -webkit-align-items: center;
+  align-items: center;
+  padding: 0 48px;
+}
+
+.mainHeaderWrapLeft {
+}
+.mainHeaderWrapLeftMenu {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 700;
+  margin-left: 30px;
+}
+.mainHeaderWrapLeftMenuLink {
+  cursor: pointer;
+  color: rgba(0,0,0,0.6);
+  transition: all 0.5s;
+}
+.mainHeaderWrapLeftMenuLink:hover {
+  transform: translateY(-5px);
+}

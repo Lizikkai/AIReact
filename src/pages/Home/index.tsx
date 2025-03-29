@@ -1,7 +1,10 @@
+import styles from './index.module.css'
+import clsx from 'clsx'
+
 const page = () => {
   return <>
-    <div className="">
-      <span>你好</span>
+    <div className={clsx(styles.homeContainer,'box-border')}>
+      <div>123123123</div>
     </div>
   </>
 }

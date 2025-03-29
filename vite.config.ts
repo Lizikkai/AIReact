@@ -12,7 +12,7 @@ export default defineConfig({
       '/api/v1': {
         target: "http://localhost:9999",
         changeOrigin: true,
-        rewrite: (path) => path
+        // rewrite: (path) => path.replace(/^\/api\/v1/, '') // 取消注释并修改路径重写规则
       }
     },
     cors: true,

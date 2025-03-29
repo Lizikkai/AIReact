@@ -21,3 +21,8 @@ html,
   min-height: 100vh;
   box-sizing: border-box;
 }
+
+.primary-link {
+	color: #287CEE;
+  cursor: pointer;
+}
